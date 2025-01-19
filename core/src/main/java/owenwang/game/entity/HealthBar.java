@@ -4,22 +4,20 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Interpolation;
-import com.badlogic.gdx.scenes.scene2d.Actor;
+import com.badlogic.gdx.scenes.scene2d.Group;
+import com.badlogic.gdx.scenes.scene2d.actions.Actions;
 import com.badlogic.gdx.scenes.scene2d.actions.TemporalAction;
+import com.badlogic.gdx.scenes.scene2d.ui.Image;
+import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.utils.Align;
-import owenwang.game.Assets;
-import owenwang.game.Constants;
-import owenwang.game.MainGame;
-import owenwang.game.Util;
+import owenwang.game.*;
 
-public class HealthBar extends Actor {
+public class HealthBar extends Group {
     private static final float BAR_HEIGHT_PROPORTION = 0.35f;
-    private static final float BAR_PADDING_HEIGHT_PROPORTION = 0.025f;
     private static final float DEFENCE_BAR_SCALE = 1.05f;
-    private static final float DEFENCE_ICON_W_PROPORTION = 0.25f;
-    private static final float DEFENCE_ICON_OFFSET_W_PROPORTION = 0.11f;
+    private static final float DEFENCE_ICON_H_PROPORTION = 0.9f;
+    private static final float DEFENCE_ICON_OFFSET_H_PROPORTION = 0.5f;
     private int maxHealth;
     private int health;
     private int defence = 0;
@@ -29,8 +27,10 @@ public class HealthBar extends Actor {
     private int fontSize = 0;
     private BitmapFont defenceFont;
     private int defenceFontSize = 0;
-    private MainGame g;
+    private static final MainGame g = MainGame.INSTANCE;
     public String text;
+    private Image shield = new Image(Assets.texture(Assets.iconDefence2));
+    private Label shieldText = new Label("", MainGame.SKIN, "cardTitle");
 
     private float healthBarWidth;
     private float healthChangeBarWidth = 0;
@@ -62,16 +62,17 @@ public class HealthBar extends Actor {
         }
     }
 
-    public HealthBar(MainGame g) {
-        this.g = g;
+    public HealthBar() {
         iconDefence = Assets.manager.get(Assets.iconDefence);
+        addActor(shield);
+        addActor(shieldText);
     }
 
     private void genFont() {
         fontSize = (int) (getHeight() * .3);
-        font = Assets.getBoldFont(fontSize);
+        font = Fonts.getBoldFont(fontSize);
         defenceFontSize = (int) (getHeight() * .5);
-        defenceFont = Assets.getBoldFont(defenceFontSize);
+        defenceFont = Fonts.getBoldFont(defenceFontSize);
     }
 
     public int getMaxHealth() {
@@ -104,8 +105,21 @@ public class HealthBar extends Actor {
         return health;
     }
 
+    private void animateShield() {
+        shield.setOrigin(Align.center);
+        shieldText.setOrigin(Align.center);
+        var act = Actions.sequence(Actions.scaleTo(1.35f, 1.35f, 0.2f, Interpolation.fastSlow),
+            Actions.scaleTo(1, 1, 0.2f, Interpolation.fastSlow));
+        shield.clearActions();
+        shieldText.clear();
+        shield.addAction(act);
+    }
+
     public int takeDamage(int damage) {
         clearActions();
+        if (damage > 0 && defence > 0) {
+            animateShield();
+        }
         defence -= damage;
         if (defence < 0) {
             addAction(new HealthChangeAction(health, Math.max(0, health + defence), 0.75f, Interpolation.fastSlow));
@@ -116,49 +130,50 @@ public class HealthBar extends Actor {
         } else return 0;
     }
 
+    public void heal(int h) {
+        clearActions();
+        var initial = health;
+        health = Math.min(maxHealth, health + h);
+        addAction(new HealthChangeAction(initial, health, 0.75f, Interpolation.linear));
+    }
+
     @Override
     public void draw(Batch batch, float parentAlpha) {
-        batch.end();
         var color = getColor();
-        g.shapeRenderer.setTransformMatrix(batch.getTransformMatrix());
-        Util.glEnableTransparent();
-        g.shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
         float barHeight = BAR_HEIGHT_PROPORTION * getHeight();
+        var c = getColor();
 
+        shield.setVisible(defence > 0);
+        shieldText.setVisible(defence > 0);
         if (defence > 0) {
             var w = getWidth() * DEFENCE_BAR_SCALE;
             var h = barHeight + getWidth() * (DEFENCE_BAR_SCALE - 1);
-            g.shapeRenderer.setColor(Constants.DEFENCE);
-            g.shapeRenderer.rect(getX() - (w - getWidth()) / 2, getY() - (h - barHeight) / 2, w, h);
-            var size = getWidth() * DEFENCE_ICON_W_PROPORTION;
-            var offset = getWidth() * DEFENCE_ICON_OFFSET_W_PROPORTION;
-            g.shapeRenderer.circle(getX() - offset, getY() + barHeight / 2, size / 2);
+            batch.setColor(Colors.DEFENCE.r * c.r, Colors.DEFENCE.g * c.g, Colors.DEFENCE.b * c.b, c.a * parentAlpha);
+            Util.rect(batch, getX() - (w - getWidth()) / 2, getY() - (h - barHeight) / 2, getOriginX(),
+                getOriginY(), w, h, getScaleX(), getScaleY(), getRotation());
+            var size = getHeight() * DEFENCE_ICON_H_PROPORTION;
+            var offset = getHeight() * DEFENCE_ICON_OFFSET_H_PROPORTION;
+           // g.shapeRenderer.circle(getX() - offset, getY() + barHeight / 2, size / 2);
+            shield.setBounds(-offset, (barHeight - size) / 2, size, size);
+            shieldText.setBounds(shield.getX(), shield.getY(), shield.getWidth(), shield.getHeight());
+            shieldText.setAlignment(Align.center);
+            shieldText.setText(Integer.toString(defence));
         }
 
-        g.shapeRenderer.setColor(Color.BLACK);
-        g.shapeRenderer.rect(getX(), getY(), getWidth(), barHeight);
-        g.shapeRenderer.setColor(Color.RED);
-        g.shapeRenderer.rect(getX(), getY(), healthBarWidth, barHeight);
-        g.shapeRenderer.setColor(Color.WHITE);
-        g.shapeRenderer.rect(getX() + healthBarWidth, getY(), healthChangeBarWidth, barHeight);
-        g.shapeRenderer.end();
-        Util.glDisableTransparent();
-        batch.begin();
-        var c = getColor();
+        batch.setColor(0, 0, 0, c.a * parentAlpha);
+        Util.rect(batch, getX(), getY(), getOriginX(), getOriginY(), getWidth(), barHeight, getScaleX(), getScaleY(), getRotation());
+        batch.setColor(c.r, 0, 0, c.a * parentAlpha);
+        Util.rect(batch, getX(), getY(), getOriginX(), getOriginY(), healthBarWidth, barHeight, getScaleX(), getScaleY(), getRotation());
+
         batch.setColor(c.r, c.g, c.b, c.a * parentAlpha);
+        Util.rect(batch, getX() + healthBarWidth, getY(), getOriginX(), getOriginY(), healthChangeBarWidth, barHeight, getScaleX(), getScaleY(), getRotation());
         if (font != null) {
             font.setColor(Color.WHITE);
             font.draw(batch, String.format("%d / %d", health, maxHealth),
                 getX(), getY() + fontSize, getWidth(), Align.center, false);
             font.draw(batch, text, getX(), getY() + barHeight + fontSize * 1.5f, getWidth(), Align.center, false);
         }
-        if (defence > 0) {
-            if (defenceFont != null) {
-                var offset = getWidth() * DEFENCE_ICON_OFFSET_W_PROPORTION;
-                var size = getWidth() * DEFENCE_ICON_W_PROPORTION;
-                defenceFont.draw(batch, Integer.toString(defence), getX() - offset - size/2, getY() + defenceFontSize * .7f, size, Align.center, false);
-            }
-        }
+        super.draw(batch, parentAlpha);
     }
 
     private float calculateBarWidth(float h) {

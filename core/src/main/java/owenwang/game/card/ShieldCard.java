@@ -1,17 +1,10 @@
 package owenwang.game.card;
 
-import com.badlogic.gdx.scenes.scene2d.actions.Actions;
 import owenwang.game.Assets;
-import owenwang.game.Constants;
-import owenwang.game.MainGame;
 import owenwang.game.entity.enemy.Enemy;
 
-public class ShieldCard extends AbilityCard {
-    private static final int BASE_VALUE = 3;
-
-    public ShieldCard(MainGame g) {
-        super(g);
-    }
+public class ShieldCard extends Card {
+    private static final int BASE_VALUE = 6;
 
     @Override
     public void play(Enemy target) {
@@ -19,18 +12,23 @@ public class ShieldCard extends AbilityCard {
     }
 
     @Override
-    public String getArt() {
+    public String art() {
         return Assets.cardShield;
     }
 
     @Override
-    public String getName() {
+    public String name() {
         return "Shield";
     }
 
     @Override
-    public String getDescription() {
+    public String description() {
         return String.format("Gain %d defence.", BASE_VALUE);
+    }
+
+    @Override
+    public Type type() {
+        return Type.ABILITY;
     }
 
     @Override

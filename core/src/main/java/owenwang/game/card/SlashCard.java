@@ -1,36 +1,39 @@
 package owenwang.game.card;
 
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
 import owenwang.game.Assets;
 import owenwang.game.MainGame;
 import owenwang.game.entity.enemy.Enemy;
 
-public class SlashCard extends AttackCard {
-    private static final int BASE_DAMAGE = 3;
-
-    public SlashCard(MainGame g) {
-        super(g);
-    }
+public class SlashCard extends Card {
+    private static final int BASE_DAMAGE = 5;
 
     @Override
     public void begin(Enemy target) {
         super.begin(target);
-        target.takeDamage(BASE_DAMAGE);
-        getPlayer().swing();
+        target.takeDamage(Gdx.input.isKeyPressed(Input.Keys.GRAVE) ? 1000 : damage(BASE_DAMAGE));
+        attacked();
     }
 
     @Override
-    public String getArt() {
+    public String art() {
         return Assets.cardSlash;
     }
 
     @Override
-    public String getName() {
+    public String name() {
         return "Slash";
     }
 
     @Override
-    public String getDescription() {
-        return String.format("Deal %d damage.", BASE_DAMAGE);
+    public String description() {
+        return String.format("Deal %s damage.", damageStr(BASE_DAMAGE));
+    }
+
+    @Override
+    public Type type() {
+        return Type.ATTACK;
     }
 
     @Override

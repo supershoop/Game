@@ -8,12 +8,14 @@ import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.Group;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.actions.Actions;
+import com.badlogic.gdx.scenes.scene2d.ui.TextTooltip;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.scenes.scene2d.utils.DragListener;
-import owenwang.game.Constants;
+import com.badlogic.gdx.utils.Align;
 import owenwang.game.MainGame;
-import owenwang.game.card.AttackCard;
+import owenwang.game.card.Card;
 import owenwang.game.card.CardActor;
+import owenwang.game.card.Cards;
 import owenwang.game.entity.enemy.Enemy;
 
 import java.util.ArrayList;
@@ -25,7 +27,7 @@ public class Hand extends Group {
 
     private List<CardActor> actors = new ArrayList<>();
 
-    private static final float GAP_PROPORTION = 0.017f;
+    private static final float GAP_PROPORTION = 0.02f;
 
     private static final float SELECT_OFFSET_PROPORTION = 0.05f; // proportional to card height
     private final MainGame g;
@@ -41,19 +43,19 @@ public class Hand extends Group {
     }
 
     public void addCard(CardActor ca) {
-        addActor(ca);
+        addActorAt(0, ca);
         actors.add(ca);
         ca.addListener(new ClickListener() {
             @Override
             public void enter(InputEvent event, float x, float y, int pointer, Actor fromActor) {
-                if (disabled || dragged != null) return;
+                if (disabled || dragged != null || pointer != -1) return;
                 selected = ca;
                 update(0.1f);
             }
 
             @Override
             public void exit(InputEvent event, float x, float y, int pointer, Actor toActor) {
-                if (dragged == ca || selected != ca) return;
+                if (dragged == ca || selected != ca || pointer != -1) return;
                 selected = null;
                 update(0.1f);
             }
@@ -80,9 +82,9 @@ public class Hand extends Group {
                     Gdx.graphics.getHeight() - Gdx.input.getY() - offset, 0.02f, Interpolation.exp5In));
 
                 var mouseY = Gdx.graphics.getHeight() - Gdx.input.getY();
-                var armThreshold = CardActor.CARD_HEIGHT_SW_PROPORTION * Gdx.graphics.getWidth() * 0.8f;
-                var rejectThreshold = CardActor.CARD_HEIGHT_SW_PROPORTION * Gdx.graphics.getWidth() * 2f;
-                if ((ca.card.cost() > g.player.energy)) {
+                var armThreshold = Cards.height();
+                var rejectThreshold = Cards.height() * 2f;
+                if (ca.card.result() == Card.PlayResult.UNPLAYABLE || (ca.card.cost() > g.player.energy)) {
                     if (mouseY > rejectThreshold) {
                         ca.setArmed(false);
                         cancel();
@@ -90,11 +92,7 @@ public class Hand extends Group {
                     }
                 } else {
                     ca.setArmed(!disabled && mouseY > armThreshold);
-                    if (ca.card instanceof AttackCard) {
-                        if (!((AttackCard) ca.card).multiTarget()) {
-                            targetEnemy();
-                        }
-                    }
+                    if (ca.card.targeted()) targetEnemy();
                 }
             }
 
@@ -103,9 +101,10 @@ public class Hand extends Group {
                 if (ca.isArmed()) {
                     var e = targetEnemy();
                     ca.card.begin(e);
-                    g.player.addAction(Actions.delay(Constants.CARD_ACTION_DELAY, Actions.run(() -> ca.card.play(e))));
+                    g.player.addAction(Actions.delay(0.15f, Actions.run(() -> ca.card.play(e))));
                     switch (ca.card.result()) {
-                        case DISCARD -> g.discardCard(ca);
+                        case DISCARD: g.discardCard(ca); break;
+                        case EXHAUST: g.exhaustCard(ca); break;
                     }
                 }
                 dragged = null;
@@ -121,6 +120,7 @@ public class Hand extends Group {
     }
 
     public void removeCard(CardActor ca) {
+        if (!ca.isDescendantOf(this)) return;
         actors.remove(ca);
         ca.clearActions();
         ca.clearListeners();
@@ -159,8 +159,9 @@ public class Hand extends Group {
 
     public void update(float duration) {
         if (actors.isEmpty()) return;
-        float cw = getWidth() * CardActor.CARD_WIDTH_SW_PROPORTION;
-        float ch = getWidth() * CardActor.CARD_HEIGHT_SW_PROPORTION;
+        float cw = Cards.width();
+        float ch = Cards.height();
+
         float gap = getWidth() * GAP_PROPORTION;
         float totalWidth = cw * actors.size() + gap * (actors.size() - 1);
         restingZone = new Rectangle(0, 0, getWidth(), ch * 0.7f);
@@ -169,13 +170,14 @@ public class Hand extends Group {
         }
         var x = (getWidth() - totalWidth) / 2f;
         for (var c : actors) {
-            var width = c == selected ? cw * CardActor.CARD_LARGE_SCALE: cw;
-            var height = c == selected ? ch * CardActor.CARD_LARGE_SCALE : ch;
+            c.setOrigin(Align.bottomLeft);
+            var scale = c == selected ? CardActor.CARD_LARGE_SCALE : 1;
             if (dragged != c) {
                 c.clearActions();
-                c.addAction(Actions.parallel(Actions.sizeTo(width, height, duration, Interpolation.exp5Out), Actions.moveTo(x, 0, duration, Interpolation.exp5Out)));
+                c.addAction(Actions.parallel(
+                    Actions.scaleTo(scale, scale, duration, Interpolation.exp5Out), Actions.moveTo(x, 0, duration, Interpolation.exp5Out)));
             }
-            x += width + gap;
+            x += Cards.width() * scale + gap * scale;
         }
     }
 
