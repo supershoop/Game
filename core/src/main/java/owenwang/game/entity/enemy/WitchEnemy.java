@@ -59,7 +59,7 @@ public class WitchEnemy extends Enemy {
                         enemies.enemies.add(0, s);
 
                     }
-                    enemies.update(0);
+                    enemies.update();
                 })));
                 playAnimation(cast);
                 actionLabel("Summon");

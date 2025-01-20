@@ -18,7 +18,6 @@ public class EnemyGroup extends Group {
     public List<Enemy> enemies = new ArrayList<>();
 
     public void processEnemy(Enemy e) {
-        update(0f);
         e.addAction(Actions.sequence(Actions.alpha(0), Actions.fadeIn(0.5f)));
         e.setFlipX(true);
     }
@@ -28,7 +27,7 @@ public class EnemyGroup extends Group {
         enemies.add(e);
     }
 
-    public void update(float delay) {
+    public void update() {
         var size = WIDTH_PROPORTION * getWidth();
         var gap = OFFSET_PROPORTION * getWidth();
         if (enemies.isEmpty()) return;
@@ -38,7 +37,7 @@ public class EnemyGroup extends Group {
         for (var e : enemies) {
             if (!e.isDescendantOf(this)) addActor(e);
             e.setSize(size/4, size);
-            e.addAction(Actions.moveTo(x, 0, delay));
+            e.setPosition(x, 0);
             x += size / 4 + gap;
         }
     }

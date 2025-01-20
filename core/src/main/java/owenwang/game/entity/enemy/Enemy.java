@@ -109,9 +109,8 @@ public abstract class Enemy extends Entity {
 
 
     public void _die(float delay, float duration) {
-        addAction(Actions.delay(delay, Actions.sequence(Actions.fadeOut(duration), Actions.run(() -> {
-            MainGame.INSTANCE.enemies.enemies.remove(this);
-        }), Actions.removeActor())));
+        MainGame.INSTANCE.enemies.enemies.remove(this);
+        addAction(Actions.delay(delay, Actions.removeActor()));
         MainGame.INSTANCE.onEnemyDied(delay + duration);
     }
 

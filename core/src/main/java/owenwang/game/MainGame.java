@@ -233,6 +233,10 @@ public class MainGame extends Game {
     }
 
     public void initialGameState() {
+        transitioning = false;
+        queuedOperations = 0;
+        queuedCardDraws = 0;
+        endTurnQueued = false;
         level = -1;
         hud.stateTime = 0;
         hud.freeze = false;
@@ -533,8 +537,8 @@ public class MainGame extends Game {
         endTurnButton.setDisabled(false);
         player.beginTurn();
         hand.disabled = false;
-        for (var e : enemies.getChildren()) {
-            ((Enemy) e).decideIntent();
+        for (var e : enemies.enemies) {
+            e.decideIntent();
         }
     }
 
@@ -693,7 +697,7 @@ public class MainGame extends Game {
         for (var enemy : e.getEnemies()) {
             enemies.addEnemy(enemy);
         }
-        enemies.update(0);
+        enemies.update();
         image.setDrawable(new TextureRegionDrawable(new TextureRegion(
             Assets.texture(e.getArt())
         )));

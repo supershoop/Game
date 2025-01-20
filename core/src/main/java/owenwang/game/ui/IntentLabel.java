@@ -46,7 +46,7 @@ public class IntentLabel extends WidgetGroup {
             t = "[BLACK]This enemy's intent is [PURPLE]unknown[BLACK].";
         }
         else if (enemy.intent == Enemy.Intent.STUN) {
-            t = String.format("[BLACK]This enemy is [#%s]stunned[].", Colors.STUN.toString());
+            t = "[BLACK]This enemy is [STUN_DARK]stunned[BLACK].";
         }
         else {
             Color color;
