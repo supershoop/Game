@@ -538,6 +538,7 @@ public class MainGame extends Game {
         player.beginTurn();
         hand.disabled = false;
         for (var e : enemies.enemies) {
+            if (e.healthBar.getHealth() == 0) continue;
             e.decideIntent();
         }
     }
@@ -546,6 +547,7 @@ public class MainGame extends Game {
         endTurnButton.setText("Enemy Turn");
         var act = new SequenceAction();
         enemies.enemies.forEach(enemy -> {
+            if (enemy.healthBar.getHealth() == 0) return;
             enemy.beginTurn();
             act.addAction(Actions.sequence(
                 Actions.delay(enemy.preTurn()),
@@ -615,7 +617,7 @@ public class MainGame extends Game {
         if (drawList.hasParent()) drawList.update();
     }
 
-    public float discardCard(CardActor card) {
+    public void discardCard(CardActor card) {
         queuedOperations++;
         hand.removeCard(card);
         ui.addActorAt(0, card);
@@ -643,10 +645,9 @@ public class MainGame extends Game {
                 ))
             )
         );
-        return 0.65f;
     }
 
-    public float exhaustCard(CardActor card) {
+    public void exhaustCard(CardActor card) {
         queuedOperations++;
         hand.removeCard(card);
         ui.addActorAt(0, card);
@@ -659,10 +660,9 @@ public class MainGame extends Game {
                         Actions.removeActor()
                     )
         ));
-        return Timings.CARD_EXHAUST_TIME + Timings.CARD_EXHAUST_DELAY;
     }
 
-    public float addToDeck(CardActor card) {
+    public void addToDeck(CardActor card) {
         var c = card.localToScreenCoordinates(new Vector2(card.getX(), card.getY()));
         ui.addActor(card);
 
@@ -682,7 +682,6 @@ public class MainGame extends Game {
                 Actions.rotateBy(-90, 0.5f, Interpolation.fastSlow)
             )
         );
-        return 0.65f;
     }
 
     public void loadEncounter(Level e) {

@@ -82,7 +82,7 @@ public class Hand extends Group {
                     Gdx.graphics.getHeight() - Gdx.input.getY() - offset, 0.02f, Interpolation.exp5In));
 
                 var mouseY = Gdx.graphics.getHeight() - Gdx.input.getY();
-                var armThreshold = Cards.height();
+                var armThreshold = Cards.height() * 0.95f;
                 var rejectThreshold = Cards.height() * 2f;
                 if (ca.card.result() == Card.PlayResult.UNPLAYABLE || (ca.card.cost() > g.player.energy)) {
                     if (mouseY > rejectThreshold) {
